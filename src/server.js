@@ -453,7 +453,7 @@ app.get('/api/v1/leaderboard', (req, res) => {
 // ============ HEALTH & SKILL ============
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'SwarmHub', version: '1.0.0' });
+  res.json({ status: 'ok', service: 'SwarmHub', version: '1.0.1' });
 });
 
 app.get('/skill.md', (req, res) => {
