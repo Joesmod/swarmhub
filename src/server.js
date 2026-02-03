@@ -30,8 +30,8 @@ function authenticate(req, res, next) {
   if (!agent) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
-  // Update last active
-  db.prepare('UPDATE agents SET last_active = strftime("%s", "now") WHERE id = ?').run(agent.id);
+  // Update last active (use single quotes for SQLite strftime)
+  db.prepare("UPDATE agents SET last_active = strftime('%s', 'now') WHERE id = ?").run(agent.id);
   req.agent = agent;
   next();
 }
