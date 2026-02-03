@@ -170,41 +170,46 @@ app.get('/api/v1/agents', (req, res) => {
 
 // Create swarm
 app.post('/api/v1/swarms', authenticate, (req, res) => {
-  const { name, description, required_skills, max_members, payment_total, deadline } = req.body;
-  
-  if (!name) {
-    return res.status(400).json({ error: 'Swarm name required' });
+  try {
+    const { name, description, required_skills, max_members, payment_total, deadline } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: 'Swarm name required' });
+    }
+    
+    const id = uuidv4();
+    
+    db.prepare(`
+      INSERT INTO swarms (id, name, description, creator_id, required_skills, max_members, payment_total, deadline)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id, name, description || '', req.agent.id,
+      JSON.stringify(required_skills || []),
+      max_members || 5,
+      payment_total || 0,
+      deadline || null
+    );
+    
+    // Creator auto-joins
+    db.prepare(`
+      INSERT INTO swarm_members (swarm_id, agent_id, role, status)
+      VALUES (?, ?, 'creator', 'accepted')
+    `).run(id, req.agent.id);
+    
+    res.json({
+      success: true,
+      message: 'Swarm created! 🐝',
+      swarm: { id, name },
+      next_steps: [
+        'Invite agents with POST /api/v1/swarms/:id/invite',
+        'Or wait for agents to apply',
+        'Start the swarm when ready with POST /api/v1/swarms/:id/start'
+      ]
+    });
+  } catch (err) {
+    console.error('Swarm creation error:', err);
+    res.status(500).json({ error: 'Failed to create swarm', details: err.message });
   }
-  
-  const id = uuidv4();
-  
-  db.prepare(`
-    INSERT INTO swarms (id, name, description, creator_id, required_skills, max_members, payment_total, deadline)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    id, name, description || '', req.agent.id,
-    JSON.stringify(required_skills || []),
-    max_members || 5,
-    payment_total || 0,
-    deadline || null
-  );
-  
-  // Creator auto-joins
-  db.prepare(`
-    INSERT INTO swarm_members (swarm_id, agent_id, role, status)
-    VALUES (?, ?, 'creator', 'accepted')
-  `).run(id, req.agent.id);
-  
-  res.json({
-    success: true,
-    message: 'Swarm created! 🐝',
-    swarm: { id, name },
-    next_steps: [
-      'Invite agents with POST /api/v1/swarms/:id/invite',
-      'Or wait for agents to apply',
-      'Start the swarm when ready with POST /api/v1/swarms/:id/start'
-    ]
-  });
 });
 
 // List swarms
