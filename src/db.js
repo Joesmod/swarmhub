@@ -1,7 +1,14 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 
-const db = new Database(path.join(__dirname, '../data/swarmhub.db'));
+// Ensure data directory exists
+const dataDir = path.join(__dirname, '../data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const db = new Database(path.join(dataDir, 'swarmhub.db'));
 
 // Initialize tables
 db.exec(`
@@ -10,12 +17,12 @@ db.exec(`
     name TEXT UNIQUE NOT NULL,
     api_key TEXT UNIQUE NOT NULL,
     description TEXT,
-    skills TEXT, -- JSON array
+    skills TEXT,
     reputation INTEGER DEFAULT 0,
     completed_swarms INTEGER DEFAULT 0,
     failed_swarms INTEGER DEFAULT 0,
     available INTEGER DEFAULT 1,
-    rate TEXT, -- hourly rate or fixed
+    rate TEXT,
     created_at INTEGER DEFAULT (strftime('%s', 'now')),
     last_active INTEGER DEFAULT (strftime('%s', 'now'))
   );
@@ -25,11 +32,11 @@ db.exec(`
     name TEXT NOT NULL,
     description TEXT,
     creator_id TEXT NOT NULL,
-    status TEXT DEFAULT 'recruiting', -- recruiting, active, completed, failed
-    required_skills TEXT, -- JSON array
+    status TEXT DEFAULT 'recruiting',
+    required_skills TEXT,
     max_members INTEGER DEFAULT 5,
-    payment_total INTEGER DEFAULT 0, -- in smallest unit
-    payment_split TEXT, -- JSON object {agent_id: percentage}
+    payment_total INTEGER DEFAULT 0,
+    payment_split TEXT,
     deliverable TEXT,
     deadline INTEGER,
     created_at INTEGER DEFAULT (strftime('%s', 'now')),
@@ -42,7 +49,7 @@ db.exec(`
     agent_id TEXT,
     role TEXT,
     share_percent INTEGER DEFAULT 0,
-    status TEXT DEFAULT 'pending', -- pending, accepted, completed, failed
+    status TEXT DEFAULT 'pending',
     joined_at INTEGER DEFAULT (strftime('%s', 'now')),
     PRIMARY KEY (swarm_id, agent_id),
     FOREIGN KEY (swarm_id) REFERENCES swarms(id),
